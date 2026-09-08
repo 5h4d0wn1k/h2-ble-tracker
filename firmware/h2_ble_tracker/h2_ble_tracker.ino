@@ -29,9 +29,9 @@
 #define RSSI_THRESHOLD -80    // Only track devices stronger than this
 
 // Device structure
-struct BLEDevice {
-    std::string address;
-    std::string name;
+struct TrackedDevice {
+    String address;
+    String name;
     int rssi;
     uint32_t appearance;
     uint32_t last_seen;
@@ -44,7 +44,7 @@ struct BLEDevice {
 };
 
 // Global state
-BLEDevice tracked_devices[MAX_DEVICES];
+TrackedDevice tracked_devices[MAX_DEVICES];
 int device_count = 0;
 BLEScan* pBLEScan;
 bool scanning = false;
@@ -121,7 +121,7 @@ const char* identifyDeviceType(uint32_t appearance) {
 // Callback for advertised devices
 class AdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice advertisedDevice) {
-        std::string address = advertisedDevice.getAddress().toString();
+        String address = advertisedDevice.getAddress().toString();
         int rssi = advertisedDevice.getRSSI();
         
         // Filter by RSSI
@@ -278,7 +278,8 @@ void startScan() {
     scanning = true;
     
     // Run scan
-    int found = pBLEScan->start(SCAN_DURATION, false);
+    BLEScanResults* results = pBLEScan->start(SCAN_DURATION, false);
+    int found = results->getCount();
     
     Serial.println("\n=== Scan Complete ===");
     Serial.printf("Found %d devices\n", found);
@@ -321,7 +322,7 @@ void showDeviceDetails(int index) {
         return;
     }
     
-    BLEDevice& dev = tracked_devices[index];
+    TrackedDevice& dev = tracked_devices[index];
     
     Serial.printf("\n=== Device #%d Details ===\n", index);
     Serial.printf("Address: %s\n", dev.address.c_str());
@@ -386,7 +387,7 @@ void exportData() {
     Serial.println("address,name,type,rssi,min_rssi,max_rssi,avg_rssi,packets,first_seen,last_seen");
     
     for (int i = 0; i < device_count; i++) {
-        BLEDevice& dev = tracked_devices[i];
+        TrackedDevice& dev = tracked_devices[i];
         Serial.printf("%s,%s,%s,%d,%d,%d,%.1f,%lu,%lu,%lu\n",
                      dev.address.c_str(),
                      dev.name.c_str(),
